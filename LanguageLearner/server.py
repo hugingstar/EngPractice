@@ -17,28 +17,39 @@ warnings.filterwarnings("ignore", module="urllib3")
 import requests
 
 
+import http.cookiejar
+
+# 전역 Session 생성 (쿠키 지원)
+global_session = requests.Session()
+cookie_path = 'cookies.txt'
+if not os.path.exists(cookie_path) and os.path.exists('LanguageLearner/cookies.txt'):
+    cookie_path = 'LanguageLearner/cookies.txt'
+
+if os.path.exists(cookie_path):
+    try:
+        cj = http.cookiejar.MozillaCookieJar(cookie_path)
+        cj.load(ignore_discard=True, ignore_expires=True)
+        global_session.cookies.update(cj)
+        print(f"Loaded cookies from {cookie_path}")
+    except Exception as e:
+        print(f"Failed to load cookies: {e}")
+
 class TranscriptItem:
     def __init__(self, text, start, duration):
         self.text = text
         self.start = start
         self.duration = duration
 
-
 def fetch_transcript_via_innertube(video_id, lang='en'):
-    """YouTube InnerTube API를 사용해 자막을 가져옵니다. 쿠키 불필요, 빠릅니다."""
+    """YouTube InnerTube API를 사용해 자막을 가져옵니다."""
     try:
-        # InnerTube API 엔드포인트
         url = "https://www.youtube.com/youtubei/v1/get_transcript"
         
-        # params: protobuf 인코딩 (video_id + lang)
-        # 직접 base64로 생성
         def build_params(video_id, lang):
-            # 간단한 protobuf: field1=video_id, field3=lang
             def encode_string(field_number, value):
                 tag = (field_number << 3) | 2
                 encoded = value.encode('utf-8')
                 return bytes([tag]) + encode_varint(len(encoded)) + encoded
-            
             def encode_varint(n):
                 result = []
                 while n > 0x7F:
@@ -46,9 +57,7 @@ def fetch_transcript_via_innertube(video_id, lang='en'):
                     n >>= 7
                 result.append(n)
                 return bytes(result)
-            
             inner = encode_string(1, video_id)
-            # lang 파라미터 (field 3 contains field 6 = lang code)
             lang_proto = encode_string(1, lang)
             outer_tag = (3 << 3) | 2
             inner2 = bytes([outer_tag]) + encode_varint(len(lang_proto)) + lang_proto
@@ -56,14 +65,12 @@ def fetch_transcript_via_innertube(video_id, lang='en'):
             return base64.b64encode(proto).decode('utf-8')
         
         params = build_params(video_id, lang)
-        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Content-Type': 'application/json',
             'X-YouTube-Client-Name': '1',
             'X-YouTube-Client-Version': '2.20240101.00.00',
         }
-        
         payload = {
             "context": {
                 "client": {
@@ -76,13 +83,11 @@ def fetch_transcript_via_innertube(video_id, lang='en'):
             "params": params
         }
         
-        res = requests.post(url, json=payload, headers=headers, timeout=10)
+        res = global_session.post(url, json=payload, headers=headers, timeout=10)
         if res.status_code != 200:
             return None
         
         data = res.json()
-        
-        # 응답 파싱
         actions = data.get('actions', [])
         parsed_list = []
         for action in actions:
@@ -122,7 +127,7 @@ def fetch_transcript_without_cookies(video_id, lang='en'):
     }
     url = f"https://www.youtube.com/watch?v={video_id}"
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = global_session.get(url, headers=headers, timeout=10)
         page_html = res.text
 
         # ytInitialPlayerResponse 추출 (개선된 방식)
@@ -185,10 +190,10 @@ def fetch_transcript_without_cookies(video_id, lang='en'):
             return None
 
         # JSON 형식으로 자막 요청
-        caption_res = requests.get(track_url + "&fmt=json3", headers=headers, timeout=10)
+        caption_res = global_session.get(track_url + "&fmt=json3", headers=headers, timeout=10)
         if caption_res.status_code != 200:
             # XML 형식으로 fallback
-            xml_res = requests.get(track_url, headers=headers, timeout=10)
+            xml_res = global_session.get(track_url, headers=headers, timeout=10)
             if xml_res.status_code != 200:
                 return None
             root = ET.fromstring(xml_res.text)
@@ -245,7 +250,7 @@ def fetch_transcript_from_invidious(video_id, lang='en'):
     for instance in instances:
         try:
             url = f"{instance}/api/v1/videos/{video_id}"
-            res = requests.get(url, timeout=6)
+            res = global_session.get(url, timeout=6)
             if res.status_code != 200:
                 continue
             data = res.json()
@@ -267,7 +272,7 @@ def fetch_transcript_from_invidious(video_id, lang='en'):
                 if not caption_url.startswith("http"):
                     caption_url = f"{instance}{caption_url}"
 
-                cap_res = requests.get(caption_url + "&format=json3", timeout=6)
+                cap_res = global_session.get(caption_url + "&format=json3", timeout=6)
                 if cap_res.status_code == 200:
                     try:
                         cap_json = cap_res.json()
@@ -412,7 +417,8 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                 # ── 1차: YouTubeTranscriptApi (가장 안정적) ──
                 try:
-                    api = YouTubeTranscriptApi()
+                    # 쿠키가 탑재된 global_session을 주입
+                    api = YouTubeTranscriptApi(http_client=global_session)
                     transcript_list = api.list(video_id)
 
                     def fetch_lang_via_api(lang):
@@ -486,7 +492,7 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                             warn_list.append(f"'{lang_names.get(script_lang, script_lang)}' 자막 없음 — 영어로 대체합니다.")
 
                 if not script_data:
-                    raise Exception("자막 추출에 실패했습니다. 영상에 자막이 있는지 확인해 주세요.")
+                    raise Exception("자막 추출에 실패했습니다. 유튜브가 봇 접근을 차단했습니다 (429 Rate Limit). 해결하려면 브라우저 확장 프로그램(Get cookies.txt 등)으로 쿠키를 추출해 프로젝트 폴더(LanguageLearner) 안에 'cookies.txt' 파일로 저장한 후 다시 시도해주세요.")
 
                 # dict_data fallback (script_data가 성공했을 때)
                 if not dict_data:
