@@ -47,7 +47,14 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                     transcript_list = YouTubeTranscriptApi(http_client=session).list(video_id)
                 except Exception as e:
                     if "blocked" in str(e).lower() or "too many requests" in str(e).lower():
-                        raise Exception("유튜브 접속 차단(Rate Limit)이 감지되었습니다. 앱 폴더에 유튜브 쿠키(cookies.txt)를 넣어주세요.")
+                        raise Exception(
+                            "유튜브 접속 차단(Rate Limit)이 감지되었습니다.\n\n"
+                            "👉 [해결 방법]\n"
+                            "1. 로컬 실행 중: 앱 폴더(LanguageLearner) 안에 'cookies.txt' 파일을 넣어주세요.\n"
+                            "2. 클라우드(Render) 배포 중:\n"
+                            "   - 저장소가 비공개(Private)인 경우: 프로젝트 폴더에 'cookies.txt'를 넣은 뒤 GitHub에 푸시하세요.\n"
+                            "   - 저장소가 공개(Public)인 경우: 보안 유출 방지를 위해 Render.com 서비스 관리자 화면의 [Environment] -> [Secret Files] 메뉴에서 Filename을 'cookies.txt'로 지정하고 쿠키 값을 붙여넣어 생성해 주세요."
+                        )
                     else:
                         raise e
 
