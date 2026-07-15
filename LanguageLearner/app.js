@@ -340,9 +340,9 @@ document.getElementById('load-btn').addEventListener('click', async () => {
     if (backendParam) {
       apiBase = backendParam.replace(/\/$/, '');
     } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Netlify 단독 서버리스 함수 엔드포인트를 호출
-      apiBase = '';
-      apiPath = '/.netlify/functions/transcript';
+      // Netlify 배포 사이트에서 접속하면 사용자가 배포한 Render 백엔드로 자동 연동
+      apiBase = DEFAULT_BACKEND_URL;
+      apiPath = '/api/transcript';
     }
 
     const response = await fetch(`${apiBase}${apiPath}?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
