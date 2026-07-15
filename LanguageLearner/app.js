@@ -335,14 +335,17 @@ document.getElementById('load-btn').addEventListener('click', async () => {
     const backendParam = urlParams.get('backend') || '';
     
     let apiBase = '';
+    let apiPath = '/api/transcript';
+    
     if (backendParam) {
       apiBase = backendParam.replace(/\/$/, '');
     } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Netlify 등 배포 서버에서 접속한 경우, 설정된 원격 클라우드 백엔드 도메인을 기본값으로 지목
-      apiBase = DEFAULT_BACKEND_URL;
+      // Netlify 단독 서버리스 함수 엔드포인트를 호출
+      apiBase = '';
+      apiPath = '/.netlify/functions/transcript';
     }
     
-    const response = await fetch(`${apiBase}/api/transcript?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
+    const response = await fetch(`${apiBase}${apiPath}?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
     
     // Check if the response is actually JSON (to prevent 'Unexpected token <' from HTML error pages)
     const contentType = response.headers.get("content-type");
