@@ -465,3 +465,57 @@ body {
     padding: 0.7rem 0.8rem;
   }
 }
+
+/* 768px 이하: 모바일 최적화 미디어 쿼리 (가로 스크롤 및 텍스트 넘침 방지) */
+@media (max-width: 768px) {
+  body {
+    padding: 0.8rem;
+    overflow-y: auto; /* Allow scrolling on small viewports */
+  }
+
+  .app-container {
+    height: auto; /* Let the height expand naturally instead of forcing 90vh */
+    gap: 1rem;
+  }
+
+  .empty-state-global {
+    padding: 2.5rem 1.2rem;
+    border-radius: 12px;
+  }
+
+  .empty-state-global h2 {
+    font-size: 1.4rem; /* Scale down title size */
+  }
+
+  .empty-state-global p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  /* Hide bookmarklet instructions as drag & drop is impossible on mobile chrome */
+  .bookmarklet-container {
+    display: none !important;
+  }
+
+  .main-content {
+    flex-direction: column !important;
+    height: auto;
+    gap: 1rem;
+  }
+
+  .video-section {
+    flex: none !important;
+    width: 100% !important;
+    height: 35vh !important;
+    min-height: 240px;
+    padding: 0.8rem !important;
+  }
+
+  .transcript-section {
+    flex: none !important;
+    width: 100% !important;
+    height: 50vh !important;
+    min-height: 300px;
+    padding: 0.8rem !important;
+  }
+}

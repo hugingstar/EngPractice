@@ -4,15 +4,9 @@ let currentHighlightedIndex = -1;
 let currentTranscript = [];
 let lastCheckTime = 0; // for rAF throttle
 
-// YouTube open with mobile deep-link support
+// YouTube open simple web link
 function openYouTube() {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    window.location.href = 'vnd.youtube://';
-    setTimeout(() => { window.open('https://www.youtube.com', '_blank'); }, 300);
-  } else {
-    window.open('https://www.youtube.com', '_blank');
-  }
+  window.open('https://www.youtube.com', '_blank');
 }
 
 // Warning banner utility
