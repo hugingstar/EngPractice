@@ -34,12 +34,19 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Setup session with optional cookies to bypass YouTube IP blocks
                 session = requests.Session()
-                if os.path.exists("cookies.txt"):
+                
+                # server.py가 위치한 폴더의 cookies.txt 절대 경로 계산
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                cookie_path = os.path.join(base_dir, "cookies.txt")
+                cookie_error_msg = ""
+                
+                if os.path.exists(cookie_path):
                     try:
-                        cookie_jar = http.cookiejar.MozillaCookieJar("cookies.txt")
+                        cookie_jar = http.cookiejar.MozillaCookieJar(cookie_path)
                         cookie_jar.load(ignore_discard=True, ignore_expires=True)
                         session.cookies = cookie_jar
                     except Exception as e:
+                        cookie_error_msg = str(e)
                         print("Cookie load error:", e)
 
                 # Try fetching transcripts
@@ -47,8 +54,17 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                     transcript_list = YouTubeTranscriptApi(http_client=session).list(video_id)
                 except Exception as e:
                     if "blocked" in str(e).lower() or "too many requests" in str(e).lower():
+                        # 쿠키 파일 감지 및 파싱 상태 진단
+                        if not os.path.exists(cookie_path):
+                            cookie_status = "❌ 쿠키 파일('cookies.txt')을 서버가 찾을 수 없습니다. 경로 마운트 또는 생성 상태를 확인해 주세요."
+                        elif cookie_error_msg:
+                            cookie_status = f"❌ 쿠키 파일 로드 실패: {cookie_error_msg} (복사 중 탭 구분자가 깨졌거나 파일이 손상되었습니다.)"
+                        else:
+                            cookie_status = "✅ 쿠키 파일이 정상 로드되었으나 유튜브 측에서 차단했습니다. (쿠키의 유효기간 만료 또는 비활성 쿠키)"
+
                         raise Exception(
-                            "유튜브 접속 차단(Rate Limit)이 감지되었습니다.\n\n"
+                            f"유튜브 접속 차단(Rate Limit)이 감지되었습니다.\n\n"
+                            f"[💡 현재 서버의 쿠키 상태]\n{cookie_status}\n\n"
                             "👉 [해결 방법]\n"
                             "1. 로컬 실행 중: 앱 폴더(LanguageLearner) 안에 'cookies.txt' 파일을 넣어주세요.\n"
                             "2. 클라우드(Render) 배포 중:\n"
