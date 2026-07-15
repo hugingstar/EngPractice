@@ -1,3 +1,4 @@
+const DEFAULT_BACKEND_URL = 'https://learner-pro-backend.onrender.com'; // 사용자님이 배포한 실제 Render 백엔드 주소로 대체됩니다.
 let player;
 let isPlayerReady = false;
 let currentHighlightedIndex = -1;
@@ -337,8 +338,8 @@ document.getElementById('load-btn').addEventListener('click', async () => {
     if (backendParam) {
       apiBase = backendParam.replace(/\/$/, '');
     } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Netlify 등 배포 서버에서 접속한 경우, 로컬 8000번 포트로 구동 중인 자막 서버를 자동 지목
-      apiBase = 'http://localhost:8000';
+      // Netlify 등 배포 서버에서 접속한 경우, 설정된 원격 클라우드 백엔드 도메인을 기본값으로 지목
+      apiBase = DEFAULT_BACKEND_URL;
     }
     
     const response = await fetch(`${apiBase}/api/transcript?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
