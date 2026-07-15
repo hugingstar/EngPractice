@@ -1,4 +1,3 @@
-const DEFAULT_BACKEND_URL = 'https://ggeolmu-language.onrender.com'; // 사용자님이 배포한 실제 Render 백엔드 주소로 대체됩니다.
 let player;
 let isPlayerReady = false;
 let currentHighlightedIndex = -1;
@@ -331,26 +330,12 @@ document.getElementById('load-btn').addEventListener('click', async () => {
   transcriptContainer.innerHTML = '<div class="loading-spinner">Loading transcript...</div>';
 
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const backendParam = urlParams.get('backend') || '';
+    const response = await fetch(`/api/transcript?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
 
-    let apiBase = '';
-    let apiPath = '/api/transcript';
-
-    if (backendParam) {
-      apiBase = backendParam.replace(/\/$/, '');
-    } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Netlify 배포 사이트에서 접속하면 사용자가 배포한 Render 백엔드로 자동 연동
-      apiBase = DEFAULT_BACKEND_URL;
-      apiPath = '/api/transcript';
-    }
-
-    const response = await fetch(`${apiBase}${apiPath}?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
-
-    // Check if the response is actually JSON (to prevent 'Unexpected token <' from HTML error pages)
+    // Check if the response is actually JSON
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-      throw new Error("서버 통신 오류: 로컬 자막 전용 서버(포트 8000번)가 실행 중인지 확인해주세요.");
+      throw new Error("서버 통신 오류: 서버가 실행 중인지 확인해주세요.");
     }
 
     if (!response.ok) {
