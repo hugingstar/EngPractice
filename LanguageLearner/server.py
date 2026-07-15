@@ -71,6 +71,69 @@ def fetch_transcript_without_cookies(video_id, lang='en'):
         print("Fallback scraper failed:", e)
         return None
 
+def fetch_transcript_from_invidious(video_id, lang='en'):
+    """유튜브 HTML 요청이 IP 차단되었을 때, 글로벌 Invidious API 프록시 서버들을 교차 찔러 자막을 긁어옵니다."""
+    instances = [
+        "https://yewtu.be",
+        "https://vid.puffyan.us",
+        "https://inv.tux.im",
+        "https://invidious.flokinet.to"
+    ]
+    
+    lang_map = {
+        'ko': ['Korean', 'ko', '한국어'],
+        'en': ['English', 'en', '영어'],
+        'ja': ['Japanese', 'ja', '일본어'],
+        'zh': ['Chinese', 'zh', '중국어']
+    }
+    target_keys = lang_map.get(lang, [lang])
+    
+    for instance in instances:
+        try:
+            url = f"{instance}/api/v1/videos/{video_id}"
+            res = requests.get(url, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                captions = data.get("captions", [])
+                
+                # 자막 트랙 매칭
+                target_track = None
+                for track in captions:
+                    code = track.get("languageCode", "").lower()
+                    label = track.get("label", "").lower()
+                    if any(k.lower() in code or k.lower() in label for k in target_keys):
+                        target_track = track
+                        break
+                        
+                if not target_track and captions:
+                    target_track = captions[0]
+                    
+                if target_track:
+                    caption_url = target_track.get("url")
+                    if not caption_url.startswith("http"):
+                        caption_url = f"{instance}{caption_url}"
+                        
+                    # JSON 포맷 강제 요청
+                    cap_res = requests.get(caption_url + "&format=json", timeout=5)
+                    if cap_res.status_code == 200:
+                        cap_json = cap_res.json()
+                        events = cap_json.get("events", [])
+                        parsed_list = []
+                        for event in events:
+                            if 'segs' in event:
+                                text = "".join(seg.get('utf8', '') for seg in event['segs']).strip()
+                                if text:
+                                    start = event.get('tStartMs', 0) / 1000.0
+                                    duration = event.get('dDurationMs', 0) / 1000.0
+                                    parsed_list.append(TranscriptItem(text, start, duration))
+                        if parsed_list:
+                            print(f"Invidious 우회 성공 (Instance: {instance})")
+                            return parsed_list
+        except Exception as e:
+            print(f"Invidious {instance} failed:", e)
+            continue
+    return None
+
 PORT = 8000
 
 class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -159,13 +222,22 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                     warnings = []
                     lang_names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'}
                     
+                    # [2차 방어선] 유튜브 HTML 직접 파싱 시도
                     script_data = fetch_transcript_without_cookies(video_id, script_lang)
                     if not script_data:
-                        # Try fallback language (English)
                         script_data = fetch_transcript_without_cookies(video_id, 'en')
                         if script_data:
                             warnings.append(f"'{lang_names.get(script_lang, script_lang)}' 자막이 없어 영어 자막으로 대체합니다.")
                     
+                    # [3차 방어선] 2차마저 차단 시 글로벌 Invidious 프록시 API 사용
+                    if not script_data:
+                        print("2차 자체 스크래퍼 차단 감지. 3차 글로벌 Invidious API로 우회합니다...")
+                        script_data = fetch_transcript_from_invidious(video_id, script_lang)
+                        if not script_data:
+                            script_data = fetch_transcript_from_invidious(video_id, 'en')
+                            if script_data:
+                                warnings.append(f"'{lang_names.get(script_lang, script_lang)}' 자막이 없어 영어 자막으로 대체합니다.")
+                                
                     if not script_data:
                         raise Exception(
                             f"유튜브 접속 차단(Rate Limit) 우회 시도 및 자막 추출에 모두 실패했습니다.\n\n"
@@ -174,7 +246,11 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f"영상 자체에 실제 사용 가능한 자막이 있는지 확인해 주세요."
                         )
                     
+                    # dict_data(해석 데이터) 역시 동일한 3중 폴백 적용
                     dict_data = fetch_transcript_without_cookies(video_id, dict_lang)
+                    if not dict_data:
+                        dict_data = fetch_transcript_from_invidious(video_id, dict_lang)
+                        
                     if not dict_data:
                         dict_lang_name = lang_names.get(dict_lang, dict_lang)
                         warnings.append(f"'{dict_lang_name}' 해석을 가져올 수 없어 A/ 줄이 비어 있습니다.")
