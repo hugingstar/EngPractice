@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_URL = 'https://learner-pro-backend.onrender.com'; // 사용자님이 배포한 실제 Render 백엔드 주소로 대체됩니다.
+const DEFAULT_BACKEND_URL = 'https://ggeolmu-language.onrender.com'; // 사용자님이 배포한 실제 Render 백엔드 주소로 대체됩니다.
 let player;
 let isPlayerReady = false;
 let currentHighlightedIndex = -1;
@@ -34,7 +34,7 @@ function showWarningBanner(messages) {
 }
 
 // Initialize YouTube API
-window.onYouTubeIframeAPIReady = function() {
+window.onYouTubeIframeAPIReady = function () {
   // Don't load a video initially
 };
 
@@ -77,7 +77,7 @@ const tooltipMean = document.getElementById('tooltip-mean');
 function renderTranscript(transcriptData) {
   transcriptContainer.innerHTML = '';
   currentTranscript = transcriptData;
-  
+
   if (transcriptData.length === 0) {
     transcriptContainer.innerHTML = '<div class="empty-state">No transcript available for this video.</div>';
     return;
@@ -87,27 +87,27 @@ function renderTranscript(transcriptData) {
     const lineEl = document.createElement('div');
     lineEl.className = 'transcript-item';
     lineEl.dataset.index = index;
-    
+
     // Create actions container
     const actionsEl = document.createElement('div');
     actionsEl.className = 'sentence-actions';
-    
+
     const translateBtn = document.createElement('button');
     translateBtn.className = 'translate-btn';
     translateBtn.textContent = 'A/가';
     translateBtn.title = '누르고 있으면 해석을 봅니다';
-    
+
     const translationEl = document.createElement('div');
     translationEl.className = 'sentence-translation';
     translationEl.textContent = line.translation || '';
-    
+
     actionsEl.appendChild(translateBtn);
     actionsEl.appendChild(translationEl);
-    
+
     // Create text container
     const textEl = document.createElement('div');
     textEl.className = 'sentence-text';
-    
+
     // Create words with spans for hover
     line.words.forEach(wordObj => {
       // Strip punctuation to check if it's a real word (supports English, Korean, Japanese, Chinese, etc.)
@@ -115,7 +115,7 @@ function renderTranscript(transcriptData) {
       const wordSpan = document.createElement('span');
       wordSpan.className = 'word-span';
       wordSpan.textContent = wordObj.text + ' ';
-      
+
       if (cleanWord.length > 0) {
         wordSpan.classList.add('has-meaning');
         wordSpan.addEventListener('mouseenter', (e) => {
@@ -133,7 +133,7 @@ function renderTranscript(transcriptData) {
           player.playVideo();
         }
       });
-      
+
       textEl.appendChild(wordSpan);
     });
 
@@ -160,15 +160,15 @@ let isTooltipLocked = false;
 async function showTooltip(e, word, isDrag = false) {
   const targetLang = document.getElementById('dict-lang')?.value || 'ko';
   currentHoverWord = word;
-  
+
   if (isDrag) {
     isTooltipLocked = true;
   }
-  
+
   tooltipPron.textContent = '';
   tooltipMean.textContent = '번역 중...';
   tooltip.classList.remove('hidden');
-  
+
   const updatePosition = () => {
     let rect;
     if (isDrag) {
@@ -183,10 +183,10 @@ async function showTooltip(e, word, isDrag = false) {
     if (!rect) return;
 
     const tooltipRect = tooltip.getBoundingClientRect();
-    
+
     let top = rect.top - tooltipRect.height - 10;
     let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-    
+
     if (top < 0) top = rect.bottom + 10;
     if (left < 0) left = 10;
     if (left + tooltipRect.width > window.innerWidth) left = window.innerWidth - tooltipRect.width - 10;
@@ -194,7 +194,7 @@ async function showTooltip(e, word, isDrag = false) {
     tooltip.style.top = `${top}px`;
     tooltip.style.left = `${left}px`;
   };
-  
+
   updatePosition();
 
   const cacheKey = `${word}_${targetLang}`;
@@ -212,7 +212,7 @@ async function showTooltip(e, word, isDrag = false) {
     const res = await fetch(url);
     const data = await res.json();
     const translatedText = data[0][0][0];
-    const pronunciation  = data[0]?.[0]?.[2] || '';  // reading (romaji / pinyin)
+    const pronunciation = data[0]?.[0]?.[2] || '';  // reading (romaji / pinyin)
 
     // Only show pronunciation for languages with complex characters
     const showPron = ['ja', 'zh'].includes(targetLang);
@@ -225,7 +225,7 @@ async function showTooltip(e, word, isDrag = false) {
       tooltipPron.textContent = showPron ? pronunciation : '';
       updatePosition();
     }
-  } catch(err) {
+  } catch (err) {
     if (currentHoverWord === word) {
       tooltipMean.textContent = '번역 실패';
       updatePosition();
@@ -242,7 +242,7 @@ function hideTooltip() {
 document.addEventListener('mouseup', (e) => {
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
-  
+
   if (selectedText.length > 0 && selectedText.length < 100) {
     showTooltip(e, selectedText, true);
   }
@@ -296,7 +296,7 @@ document.getElementById('load-btn').addEventListener('click', async () => {
   const videoId = extractVideoId(urlInput);
   const scriptLang = document.getElementById('script-lang')?.value || 'en';
   const dictLang = document.getElementById('dict-lang')?.value || 'ko';
-  
+
   if (!videoId) {
     alert("Invalid YouTube URL");
     return;
@@ -305,7 +305,7 @@ document.getElementById('load-btn').addEventListener('click', async () => {
   // 1. Show UI sections if they were hidden
   const welcomeMsg = document.getElementById('welcome-message');
   if (welcomeMsg) welcomeMsg.style.display = 'none';
-  
+
   document.querySelector('.video-section').style.display = 'flex';
   document.querySelector('.transcript-section').style.display = 'flex';
 
@@ -326,17 +326,17 @@ document.getElementById('load-btn').addEventListener('click', async () => {
   }
 
   currentHighlightedIndex = -1;
-  
+
   // 3. Fetch Transcript from Backend
   transcriptContainer.innerHTML = '<div class="loading-spinner">Loading transcript...</div>';
-  
+
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const backendParam = urlParams.get('backend') || '';
-    
+
     let apiBase = '';
     let apiPath = '/api/transcript';
-    
+
     if (backendParam) {
       apiBase = backendParam.replace(/\/$/, '');
     } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -344,20 +344,20 @@ document.getElementById('load-btn').addEventListener('click', async () => {
       apiBase = '';
       apiPath = '/.netlify/functions/transcript';
     }
-    
+
     const response = await fetch(`${apiBase}${apiPath}?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
-    
+
     // Check if the response is actually JSON (to prevent 'Unexpected token <' from HTML error pages)
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       throw new Error("서버 통신 오류: 로컬 자막 전용 서버(포트 8000번)가 실행 중인지 확인해주세요.");
     }
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || "자막을 불러오는데 실패했습니다.");
     }
-    
+
     const data = await response.json();
 
     // Show warning banner if server returned any warnings
