@@ -379,6 +379,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Bind click listener for open youtube button
   document.getElementById('open-youtube-btn')?.addEventListener('click', openYouTube);
 
+  // Dynamically bake the current host domain (origin) into the bookmarklet href
+  const bookmarkletBtn = document.getElementById('bookmarklet-btn');
+  if (bookmarkletBtn) {
+    const currentOrigin = window.location.origin;
+    const rawCode = bookmarkletBtn.getAttribute('href');
+    if (rawCode) {
+      const updatedCode = rawCode.replace('http://localhost:8000', currentOrigin);
+      bookmarkletBtn.setAttribute('href', updatedCode);
+    }
+  }
+
   const params = new URLSearchParams(window.location.search);
   const videoIdParam = params.get('videoId');
   if (videoIdParam) {
