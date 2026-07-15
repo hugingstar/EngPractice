@@ -10,6 +10,67 @@ import warnings
 # Suppress urllib3 SSL warnings on macOS
 warnings.filterwarnings("ignore", module="urllib3")
 
+import requests
+
+class TranscriptItem:
+    def __init__(self, text, start, duration):
+        self.text = text
+        self.start = start
+        self.duration = duration
+
+def fetch_transcript_without_cookies(video_id, lang='en'):
+    """유튜브 TimedText API를 직접 파싱하여 쿠키 없이 자막을 획득합니다."""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9,ko;q=0.8'
+    }
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    try:
+        res = requests.get(url, headers=headers, timeout=10)
+        html = res.text
+        
+        # ytInitialPlayerResponse 찾기
+        match = re.search(r'ytInitialPlayerResponse\s*=\s*({.+?});', html)
+        if not match:
+            match = re.search(r'var ytInitialPlayerResponse\s*=\s*({.+?});', html)
+        if not match:
+            return None
+            
+        player_response = json.loads(match.group(1))
+        caption_tracks = player_response.get('captions', {}).get('playerCaptionsTracklistRenderer', {}).get('captionTracks', [])
+        
+        # 원하는 언어 코드 매칭
+        track_url = None
+        for track in caption_tracks:
+            if track.get('languageCode') == lang:
+                track_url = track.get('baseUrl')
+                break
+        
+        # 원하는 언어가 없고 다른 언어만 존재할 시 첫 번째 트랙을 폴백으로 지정
+        if not track_url and caption_tracks:
+            track_url = caption_tracks[0].get('baseUrl')
+            
+        if not track_url:
+            return None
+
+        # fmt=json을 덧붙여 다이렉트 자막 요청 (CORS나 쿠키 차단이 없음)
+        caption_res = requests.get(track_url + "&fmt=json", headers=headers, timeout=10)
+        caption_json = caption_res.json()
+        
+        events = caption_json.get('events', [])
+        parsed_list = []
+        for event in events:
+            if 'segs' in event:
+                text = "".join(seg.get('utf8', '') for seg in event['segs']).strip()
+                if text:
+                    start = event.get('tStartMs', 0) / 1000.0
+                    duration = event.get('dDurationMs', 0) / 1000.0
+                    parsed_list.append(TranscriptItem(text, start, duration))
+        return parsed_list
+    except Exception as e:
+        print("Fallback scraper failed:", e)
+        return None
+
 PORT = 8000
 
 class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -51,75 +112,72 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                 # Try fetching transcripts
                 try:
+                    # 1. Try with official YouTubeTranscriptApi (using cookies if available)
                     transcript_list = YouTubeTranscriptApi(http_client=session).list(video_id)
-                except Exception as e:
-                    if "blocked" in str(e).lower() or "too many requests" in str(e).lower():
-                        # 쿠키 파일 감지 및 파싱 상태 진단
-                        if not os.path.exists(cookie_path):
-                            cookie_status = "❌ 쿠키 파일('cookies.txt')을 서버가 찾을 수 없습니다. 경로 마운트 또는 생성 상태를 확인해 주세요."
-                        elif cookie_error_msg:
-                            cookie_status = f"❌ 쿠키 파일 로드 실패: {cookie_error_msg} (복사 중 탭 구분자가 깨졌거나 파일이 손상되었습니다.)"
-                        else:
-                            cookie_status = "✅ 쿠키 파일이 정상 로드되었으나 유튜브 측에서 차단했습니다. (쿠키의 유효기간 만료 또는 비활성 쿠키)"
-
-                        raise Exception(
-                            f"유튜브 접속 차단(Rate Limit)이 감지되었습니다.\n\n"
-                            f"[💡 현재 서버의 쿠키 상태]\n{cookie_status}\n\n"
-                            "👉 [해결 방법]\n"
-                            "1. 로컬 실행 중: 앱 폴더(LanguageLearner) 안에 'cookies.txt' 파일을 넣어주세요.\n"
-                            "2. 클라우드(Render) 배포 중:\n"
-                            "   - 저장소가 비공개(Private)인 경우: 프로젝트 폴더에 'cookies.txt'를 넣은 뒤 GitHub에 푸시하세요.\n"
-                            "   - 저장소가 공개(Public)인 경우: 보안 유출 방지를 위해 Render.com 서비스 관리자 화면의 [Environment] -> [Secret Files] 메뉴에서 Filename을 'cookies.txt'로 지정하고 쿠키 값을 붙여넣어 생성해 주세요."
-                        )
-                    else:
-                        raise e
-
-                def fetch_lang_data(lang):
-                    """Fetch transcript in a given language, with auto-translate fallback."""
-                    # 1. Try direct match
-                    try:
-                        t = transcript_list.find_transcript([lang])
-                        return t.fetch()
-                    except:
-                        pass
-                    # 2. Try generated transcript
-                    try:
-                        t = transcript_list.find_generated_transcript([lang])
-                        return t.fetch()
-                    except:
-                        pass
-                    # 3. Fallback: translate any translatable transcript
-                    for t in transcript_list:
-                        if t.is_translatable:
-                            try:
-                                return t.translate(lang).fetch()
-                            except:
-                                pass
-                    return None
-
-                # Fetch script (main) and dict (translation/A/) data
-                warnings = []
-                lang_names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'}
-
-                script_data = fetch_lang_data(script_lang)
-                if not script_data:
-                    # Fallback: use the auto-detected original transcript
-                    for t in transcript_list:
+                    
+                    def fetch_lang_data(lang):
+                        """Fetch transcript in a given language, with auto-translate fallback."""
                         try:
-                            script_data = t.fetch()
-                            break
-                        except:
-                            pass
-                    if script_data:
-                        script_lang_name = lang_names.get(script_lang, script_lang)
-                        warnings.append(f"'{script_lang_name}' 자막이 없어 원본 언어로 표시합니다.")
-                    else:
-                        raise Exception("이 영상에서 사용 가능한 자막을 찾을 수 없습니다.")
+                            t = transcript_list.find_transcript([lang])
+                            return t.fetch()
+                        except: pass
+                        try:
+                            t = transcript_list.find_generated_transcript([lang])
+                            return t.fetch()
+                        except: pass
+                        for t in transcript_list:
+                            if t.is_translatable:
+                                try: return t.translate(lang).fetch()
+                                except: pass
+                        return None
 
-                dict_data = fetch_lang_data(dict_lang)
-                if not dict_data:
-                    dict_lang_name = lang_names.get(dict_lang, dict_lang)
-                    warnings.append(f"'{dict_lang_name}' 해석을 가져올 수 없어 A/ 줄이 비어 있습니다.")
+                    # Fetch script (main) and dict (translation/A/) data
+                    warnings = []
+                    lang_names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'}
+
+                    script_data = fetch_lang_data(script_lang)
+                    if not script_data:
+                        for t in transcript_list:
+                            try:
+                                script_data = t.fetch()
+                                break
+                            except: pass
+                        if script_data:
+                            script_lang_name = lang_names.get(script_lang, script_lang)
+                            warnings.append(f"'{script_lang_name}' 자막이 없어 원본 언어로 표시합니다.")
+                        else:
+                            raise Exception("이 영상에서 사용 가능한 자막을 찾을 수 없습니다.")
+
+                    dict_data = fetch_lang_data(dict_lang)
+                    if not dict_data:
+                        dict_lang_name = lang_names.get(dict_lang, dict_lang)
+                        warnings.append(f"'{dict_lang_name}' 해석을 가져올 수 없어 A/ 줄이 비어 있습니다.")
+
+                except Exception as e:
+                    # 2. Fallback: Try with cookieless scraper if official API fails (Rate Limit, etc.)
+                    print("유튜브 공식 API 호출 실패. 쿠키리스 우회 스크래퍼로 시도합니다:", e)
+                    warnings = []
+                    lang_names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'}
+                    
+                    script_data = fetch_transcript_without_cookies(video_id, script_lang)
+                    if not script_data:
+                        # Try fallback language (English)
+                        script_data = fetch_transcript_without_cookies(video_id, 'en')
+                        if script_data:
+                            warnings.append(f"'{lang_names.get(script_lang, script_lang)}' 자막이 없어 영어 자막으로 대체합니다.")
+                    
+                    if not script_data:
+                        raise Exception(
+                            f"유튜브 접속 차단(Rate Limit) 우회 시도 및 자막 추출에 모두 실패했습니다.\n\n"
+                            f"[💡 현재 서버의 쿠키 상태]\n"
+                            f"{'❌ 쿠키 파일 없음' if not os.path.exists(cookie_path) else '❌ 쿠키 로드 실패: ' + cookie_error_msg if cookie_error_msg else '✅ 쿠키 파일 로드됨 (유튜브 측 거부)'}\n\n"
+                            f"영상 자체에 실제 사용 가능한 자막이 있는지 확인해 주세요."
+                        )
+                    
+                    dict_data = fetch_transcript_without_cookies(video_id, dict_lang)
+                    if not dict_data:
+                        dict_lang_name = lang_names.get(dict_lang, dict_lang)
+                        warnings.append(f"'{dict_lang_name}' 해석을 가져올 수 없어 A/ 줄이 비어 있습니다.")
 
                 # Build the response array
                 mock_transcript = []
