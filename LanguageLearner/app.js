@@ -332,14 +332,21 @@ document.getElementById('load-btn').addEventListener('click', async () => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const backendParam = urlParams.get('backend') || '';
-    const apiBase = backendParam ? backendParam.replace(/\/$/, '') : '';
+    
+    let apiBase = '';
+    if (backendParam) {
+      apiBase = backendParam.replace(/\/$/, '');
+    } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      // Netlify 등 배포 서버에서 접속한 경우, 로컬 8000번 포트로 구동 중인 자막 서버를 자동 지목
+      apiBase = 'http://localhost:8000';
+    }
     
     const response = await fetch(`${apiBase}/api/transcript?videoId=${videoId}&scriptLang=${scriptLang}&dictLang=${dictLang}`);
     
     // Check if the response is actually JSON (to prevent 'Unexpected token <' from HTML error pages)
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-      throw new Error("서버 통신 오류: 전용 서버(포트 8000번)로 접속했는지 확인해주세요.");
+      throw new Error("서버 통신 오류: 로컬 자막 전용 서버(포트 8000번)가 실행 중인지 확인해주세요.");
     }
     
     if (!response.ok) {
