@@ -15,17 +15,18 @@ import base64
 warnings.filterwarnings("ignore", module="urllib3")
 
 import requests
-
-
 import http.cookiejar
 
 # 전역 Session 생성 (쿠키 지원)
 global_session = requests.Session()
-cookie_path = 'cookies.txt'
-if not os.path.exists(cookie_path) and os.path.exists('LanguageLearner/cookies.txt'):
-    cookie_path = 'LanguageLearner/cookies.txt'
+cookie_paths = [
+    '/etc/secrets/cookies.txt',          # 1. Render.com Secret File 경로
+    'cookies.txt',                       # 2. 로컬 실행 (LanguageLearner 폴더)
+    'LanguageLearner/cookies.txt'        # 3. 로컬 실행 (루트 폴더)
+]
+cookie_path = next((p for p in cookie_paths if os.path.exists(p)), None)
 
-if os.path.exists(cookie_path):
+if cookie_path:
     try:
         cj = http.cookiejar.MozillaCookieJar(cookie_path)
         cj.load(ignore_discard=True, ignore_expires=True)
