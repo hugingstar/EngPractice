@@ -269,27 +269,27 @@ document.addEventListener('keydown', (e) => {
     } else {
       player.playVideo();
     }
-  } else if (e.key === 'b' || e.key === 'B') {
+  } else if (e.key === 'b' || e.key === 'B' || e.key === 'ㅠ' || e.code === 'KeyB') {
     e.preventDefault();
     if (currentHighlightedIndex >= 0 && currentHighlightedIndex < currentTranscript.length) {
       player.seekTo(currentTranscript[currentHighlightedIndex].startTime, true);
       player.playVideo();
     }
-  } else if (e.key === 'v' || e.key === 'V') {
+  } else if (e.key === 'v' || e.key === 'V' || e.key === 'ㅍ' || e.code === 'KeyV') {
     e.preventDefault();
     const prevIndex = currentHighlightedIndex - 1;
     if (prevIndex >= 0 && prevIndex < currentTranscript.length) {
       player.seekTo(currentTranscript[prevIndex].startTime, true);
       player.playVideo();
     }
-  } else if (e.key === 'n' || e.key === 'N') {
+  } else if (e.key === 'n' || e.key === 'N' || e.key === 'ㅜ' || e.code === 'KeyN') {
     e.preventDefault();
     const nextIndex = currentHighlightedIndex + 1;
     if (nextIndex < currentTranscript.length) {
       player.seekTo(currentTranscript[nextIndex].startTime, true);
       player.playVideo();
     }
-  } else if (e.key === 'g' || e.key === 'G') {
+  } else if (e.key === 'g' || e.key === 'G' || e.key === 'ㅎ' || e.code === 'KeyG') {
     e.preventDefault();
     if (currentHighlightedIndex >= 0 && currentHighlightedIndex < currentTranscript.length) {
       const currentTime = player.getCurrentTime();
