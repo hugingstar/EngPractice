@@ -529,7 +529,7 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                             warn_list.append(f"'{lang_names.get(script_lang, script_lang)}' 자막 없음 — 영어로 대체합니다.")
 
                 if not script_data:
-                    raise Exception("자막 추출에 실패했습니다. 유튜브가 봇 접근을 차단했습니다 (429 Rate Limit). 유튜브 영상 페이지에서 'Learner Pro' 확장 프로그램 아이콘을 클릭하여 영상을 열어주세요.")
+                    raise Exception("자막 추출에 실패했습니다. 영상 자체에 자막이 없거나, 서버가 차단되었습니다 (429 Rate Limit).")
 
                 # dict_data fallback (script_data가 성공했을 때)
                 if not dict_data:

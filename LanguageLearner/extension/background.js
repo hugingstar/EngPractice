@@ -16,7 +16,19 @@ chrome.action.onClicked.addListener(async (tab) => {
       target: { tabId: tab.id },
       world: 'MAIN',
       func: async () => {
-        const response = window.ytInitialPlayerResponse;
+        let response = null;
+        try {
+          const player = document.getElementById('movie_player');
+          if (player && typeof player.getPlayerResponse === 'function') {
+            response = player.getPlayerResponse();
+          }
+        } catch (e) {
+          console.error("Failed to get movie_player response", e);
+        }
+        if (!response) {
+          response = window.ytInitialPlayerResponse;
+        }
+
         const captionTracks = response?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
         if (!captionTracks.length) {
           return { videoId: response?.videoDetails?.videoId || null, transcripts: [] };
@@ -64,7 +76,12 @@ chrome.action.onClicked.addListener(async (tab) => {
         console.error("Server is not running or failed to connect:", e);
       }
     } else {
-      console.warn("No transcripts extracted or window.ytInitialPlayerResponse not ready.");
+      // 자막을 하나도 못 뽑아온 경우
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => alert("이 유튜브 영상에는 추출할 수 있는 캡션(자막)이 없습니다.")
+      });
+      return; // 앱을 열지 않고 종료
     }
   } catch (e) {
     console.error("Failed to execute scripting or extract transcript:", e);
