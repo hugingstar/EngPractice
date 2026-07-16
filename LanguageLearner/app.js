@@ -275,6 +275,13 @@ document.addEventListener('keydown', (e) => {
       player.seekTo(currentTranscript[currentHighlightedIndex].startTime, true);
       player.playVideo();
     }
+  } else if (e.key === 'v' || e.key === 'V') {
+    e.preventDefault();
+    const prevIndex = currentHighlightedIndex - 1;
+    if (prevIndex >= 0 && prevIndex < currentTranscript.length) {
+      player.seekTo(currentTranscript[prevIndex].startTime, true);
+      player.playVideo();
+    }
   } else if (e.key === 'n' || e.key === 'N') {
     e.preventDefault();
     const nextIndex = currentHighlightedIndex + 1;
