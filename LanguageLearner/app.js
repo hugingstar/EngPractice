@@ -255,6 +255,21 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
+// Global Spacebar Play/Pause toggle
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    if (isPlayerReady && player) {
+      const state = player.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+      } else {
+        player.playVideo();
+      }
+    }
+  }
+});
+
 // Highlight logic — throttled to ~4 times/sec (250ms) to reduce IFrame bridge overhead
 function checkCurrentTime(now) {
   if (!isPlayerReady || !player) return;
@@ -370,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentOrigin = window.location.origin;
     const rawCode = bookmarkletBtn.getAttribute('href');
     if (rawCode) {
-      const updatedCode = rawCode.replace('http://localhost:8000', currentOrigin);
+      const updatedCode = rawCode.replace('http://ggeolmu-language.com', currentOrigin);
       bookmarkletBtn.setAttribute('href', updatedCode);
     }
   }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Language Learner Pro</title>
+  <title>Ggeolmu language Pro</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="icon" type="image/png" href="./favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
   <div class="app-container">
     <header class="glass-header">
       <div class="header-left">
-        <h1>Language Learner <span class="accent">Pro</span></h1>
+        <h1>Ggeolmu language <span class="accent">Pro</span></h1>
         <button id="open-youtube-btn" title="YouTube 열기">▶ YouTube 열기</button>
       </div>
       <div class="url-input-group">
@@ -44,7 +44,7 @@
         <div class="bookmarklet-container" style="margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.2);">
           <h3>💡 Pro Tip: 유튜브에서 바로 열기!</h3>
           <p style="color: #aaa; font-size: 0.9em; margin-bottom: 1rem;">아래 버튼을 즐겨찾기 바에 드래그해서 올려두세요. 유튜브 영상을 보다가 클릭하면 이 화면으로 텔레포트 합니다!</p>
-          <a id="bookmarklet-btn" href="javascript:(function(){document.querySelectorAll('video').forEach(function(v){v.pause();});var mp=document.getElementById('movie_player');if(mp&&mp.pauseVideo)mp.pauseVideo();var m=window.location.href.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^&?\/ ]{11})/);var v=m?m[1]:null;if(v)window.open('http://localhost:8000/?videoId='+v,'_blank');else alert('YouTube 영상 페이지에서 클릭해주세요!');})();" class="btn" style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; cursor: move;">📖 Learner Pro 열기</a>
+          <a id="bookmarklet-btn" href="javascript:(function(){document.querySelectorAll('video').forEach(function(v){v.pause();});var mp=document.getElementById('movie_player');if(mp&&mp.pauseVideo)mp.pauseVideo();var m=window.location.href.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^&?\/ ]{11})/);var v=m?m[1]:null;if(v)window.open('http://ggeolmu-language.com/?videoId='+v,'_blank');else alert('YouTube 영상 페이지에서 클릭해주세요!');})();" class="btn" style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; cursor: move;">📖 Ggeolmu Pro 열기</a>
         </div>
       </div>
 

@@ -57,6 +57,8 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .glass-header h1 {
@@ -225,6 +227,8 @@ body {
 .transcript-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding-left: 0.5rem;
   padding-right: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -248,7 +252,7 @@ body {
 
 /* Transcript Item */
 .transcript-item {
-  padding: 1.2rem 1rem; /* Slightly more padding for readability */
+  padding: 1.2rem 1.5rem; /* Slightly more padding for readability and left edge */
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid transparent;

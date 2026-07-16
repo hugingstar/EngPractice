@@ -6,7 +6,12 @@ chrome.action.onClicked.addListener(async (tab) => {
   const videoId = (match && match[2].length === 11) ? match[2] : null;
 
   if (!videoId) {
-    chrome.tabs.create({ url: `https://ggeolmu-language.onrender.com/` });
+    chrome.windows.create({
+      url: `http://ggeolmu-language.com/`,
+      type: 'popup',
+      width: 1200,
+      height: 800
+    });
     return;
   }
 
@@ -60,20 +65,17 @@ chrome.action.onClicked.addListener(async (tab) => {
     if (extractionResult && extractionResult.transcripts && extractionResult.transcripts.length > 0) {
       // 2. 로컬 서버에 전송
       try {
-        const postRes = await fetch("https://ggeolmu-language.onrender.com/api/submit_transcript", {
+        const postRes = await fetch("http://ggeolmu-language.com/api/submit_transcript", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(extractionResult)
+          body: JSON.stringify({ videoId, transcripts: extractionResult.transcripts })
         });
-        if (postRes.ok) {
-          console.log("Transcript cached successfully!");
-        } else {
-          console.error("Failed to submit transcript:", await postRes.text());
-        }
-      } catch (e) {
-        console.error("Server is not running or failed to connect:", e);
+        const resText = await postRes.text();
+        console.log("Submit response:", resText);
+      } catch (err) {
+        console.error("Submit error:", err);
       }
     } else {
       // 자막을 하나도 못 뽑아온 경우
@@ -87,6 +89,11 @@ chrome.action.onClicked.addListener(async (tab) => {
     console.error("Failed to execute scripting or extract transcript:", e);
   }
 
-  // 3. 앱 열기
-  chrome.tabs.create({ url: `https://ggeolmu-language.onrender.com/?videoId=${videoId}` });
+  // 3. 앱 형태의 독립된 팝업 창 열기
+  chrome.windows.create({
+    url: `http://ggeolmu-language.com/?videoId=${videoId}`,
+    type: 'popup',
+    width: 1200,
+    height: 800
+  });
 });

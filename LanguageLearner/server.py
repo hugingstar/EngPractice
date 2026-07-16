@@ -1,8 +1,15 @@
 import http.server
 import socketserver
 import json
-import urllib.parse
+import sys
 import os
+
+# root 권한으로 실행될 때, 사용자의 로컬 파이썬 패키지를 찾을 수 있도록 경로 추가
+user_site_packages = os.path.expanduser('~yusunglee/Library/Python/3.9/lib/python/site-packages')
+if user_site_packages not in sys.path:
+    sys.path.append(user_site_packages)
+
+import urllib.parse
 from youtube_transcript_api import YouTubeTranscriptApi
 import re
 import traceback
@@ -340,7 +347,7 @@ def build_transcript_response(script_data, dict_data, warnings):
             "duration": current_duration
         })
 
-    speaker_emojis = ['🐶', '🐱', '🦊', '🐻', '🐼', '🐨', '🐰', '🐯']
+    speaker_emojis = ['🧑', '🧑‍🦰', '🧑‍🦱', '🧑‍🦳', '🧑‍🦲', '👱']
     current_speaker_idx = 0
 
     for item in grouped_data:
@@ -352,12 +359,17 @@ def build_transcript_response(script_data, dict_data, warnings):
 
         target_text = find_closest_dict(start).replace('\n', ' ')
 
-        if '>>' in text:
-            text = text.replace('>>', speaker_emojis[current_speaker_idx % len(speaker_emojis)])
+        emoji_to_use = ''
+        if '>>' in text or '>>' in target_text:
+            emoji_to_use = speaker_emojis[current_speaker_idx % len(speaker_emojis)]
+            text = text.replace('>>', emoji_to_use)
+            target_text = target_text.replace('>>', emoji_to_use)
             current_speaker_idx += 1
 
         word_objs = []
         for chunk_text, chunk_start in word_tuples:
+            if emoji_to_use and '>>' in chunk_text:
+                chunk_text = chunk_text.replace('>>', emoji_to_use)
             chunk_words = chunk_text.split()
             for w in chunk_words:
                 word_objs.append({
@@ -377,7 +389,7 @@ def build_transcript_response(script_data, dict_data, warnings):
 
     return mock_transcript
 
-PORT = int(os.environ.get('PORT', 8000))
+PORT = int(os.environ.get('PORT', 80))
 
 
 class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
