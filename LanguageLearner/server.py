@@ -15,25 +15,9 @@ import base64
 warnings.filterwarnings("ignore", module="urllib3")
 
 import requests
-import http.cookiejar
 
-# 전역 Session 생성 (쿠키 지원)
+# 전역 Session 생성
 global_session = requests.Session()
-cookie_paths = [
-    '/etc/secrets/cookies.txt',          # 1. Render.com Secret File 경로
-    'cookies.txt',                       # 2. 로컬 실행 (LanguageLearner 폴더)
-    'LanguageLearner/cookies.txt'        # 3. 로컬 실행 (루트 폴더)
-]
-cookie_path = next((p for p in cookie_paths if os.path.exists(p)), None)
-
-if cookie_path:
-    try:
-        cj = http.cookiejar.MozillaCookieJar(cookie_path)
-        cj.load(ignore_discard=True, ignore_expires=True)
-        global_session.cookies.update(cj)
-        print(f"Loaded cookies from {cookie_path}")
-    except Exception as e:
-        print(f"Failed to load cookies: {e}")
 
 class TranscriptItem:
     def __init__(self, text, start, duration):
@@ -545,7 +529,7 @@ class TranscriptRequestHandler(http.server.SimpleHTTPRequestHandler):
                             warn_list.append(f"'{lang_names.get(script_lang, script_lang)}' 자막 없음 — 영어로 대체합니다.")
 
                 if not script_data:
-                    raise Exception("자막 추출에 실패했습니다. 유튜브가 봇 접근을 차단했습니다 (429 Rate Limit). 해결하려면 브라우저 확장 프로그램(Learner Pro) 아이콘을 유튜브 동영상 페이지에서 클릭해 실행하거나, 브라우저에서 쿠키를 추출해 프로젝트 폴더 안에 'cookies.txt' 파일로 저장한 후 다시 시도해주세요.")
+                    raise Exception("자막 추출에 실패했습니다. 유튜브가 봇 접근을 차단했습니다 (429 Rate Limit). 유튜브 영상 페이지에서 'Learner Pro' 확장 프로그램 아이콘을 클릭하여 영상을 열어주세요.")
 
                 # dict_data fallback (script_data가 성공했을 때)
                 if not dict_data:
