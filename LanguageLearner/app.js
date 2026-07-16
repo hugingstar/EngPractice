@@ -255,17 +255,56 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
-// Global Spacebar Play/Pause toggle
+// Global Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (!isPlayerReady || !player) return;
+
+  if (e.code === 'Space') {
     e.preventDefault();
-    if (isPlayerReady && player) {
-      const state = player.getPlayerState();
-      if (state === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-      } else {
-        player.playVideo();
-      }
+    const state = player.getPlayerState();
+    if (state === YT.PlayerState.PLAYING) {
+      player.pauseVideo();
+    } else {
+      player.playVideo();
+    }
+  } else if (e.key === 'b' || e.key === 'B') {
+    e.preventDefault();
+    if (currentHighlightedIndex >= 0 && currentHighlightedIndex < currentTranscript.length) {
+      player.seekTo(currentTranscript[currentHighlightedIndex].startTime, true);
+      player.playVideo();
+    }
+  } else if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    const nextIndex = currentHighlightedIndex + 1;
+    if (nextIndex < currentTranscript.length) {
+      player.seekTo(currentTranscript[nextIndex].startTime, true);
+      player.playVideo();
+    }
+  } else if (e.key === '1') {
+    e.preventDefault();
+    if (player.getDuration) {
+      player.seekTo(0, true);
+      player.playVideo();
+    }
+  } else if (e.key === '2') {
+    e.preventDefault();
+    if (player.getDuration) {
+      player.seekTo(player.getDuration() * 0.25, true);
+      player.playVideo();
+    }
+  } else if (e.key === '3') {
+    e.preventDefault();
+    if (player.getDuration) {
+      player.seekTo(player.getDuration() * 0.50, true);
+      player.playVideo();
+    }
+  } else if (e.key === '4') {
+    e.preventDefault();
+    if (player.getDuration) {
+      player.seekTo(player.getDuration() * 0.75, true);
+      player.playVideo();
     }
   }
 });
