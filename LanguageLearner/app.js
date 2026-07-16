@@ -289,6 +289,49 @@ document.addEventListener('keydown', (e) => {
       player.seekTo(currentTranscript[nextIndex].startTime, true);
       player.playVideo();
     }
+  } else if (e.key === 'g' || e.key === 'G') {
+    e.preventDefault();
+    if (currentHighlightedIndex >= 0 && currentHighlightedIndex < currentTranscript.length) {
+      const currentTime = player.getCurrentTime();
+      const currentBlock = currentTranscript[currentHighlightedIndex];
+      const words = currentBlock.words;
+      
+      let targetTime = currentBlock.startTime;
+
+      if (words && words.length > 0) {
+        let currentWordTime = words[0].startTime ?? currentBlock.startTime;
+        for (let i = 0; i < words.length; i++) {
+          const wt = words[i].startTime ?? currentBlock.startTime;
+          if (wt <= currentTime) {
+            currentWordTime = wt;
+          } else {
+            break;
+          }
+        }
+
+        let foundPrevTime = false;
+        for (let i = words.length - 1; i >= 0; i--) {
+          const wt = words[i].startTime ?? currentBlock.startTime;
+          if (wt < currentWordTime - 0.05) {
+            targetTime = wt;
+            foundPrevTime = true;
+            break;
+          }
+        }
+
+        if (!foundPrevTime && currentHighlightedIndex > 0) {
+           const prevBlock = currentTranscript[currentHighlightedIndex - 1];
+           const prevWords = prevBlock.words;
+           if (prevWords && prevWords.length > 0) {
+             targetTime = prevWords[prevWords.length - 1].startTime ?? prevBlock.startTime;
+           } else {
+             targetTime = prevBlock.startTime;
+           }
+        }
+      }
+      player.seekTo(targetTime, true);
+      player.playVideo();
+    }
   } else if (e.key === '1') {
     e.preventDefault();
     if (player.getDuration) {
