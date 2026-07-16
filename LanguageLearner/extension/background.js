@@ -6,7 +6,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   const videoId = (match && match[2].length === 11) ? match[2] : null;
 
   if (!videoId) {
-    chrome.tabs.create({ url: `http://localhost:8000/` });
+    chrome.tabs.create({ url: `https://ggeolmu-language.onrender.com/` });
     return;
   }
 
@@ -48,7 +48,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     if (extractionResult && extractionResult.transcripts && extractionResult.transcripts.length > 0) {
       // 2. 로컬 서버에 전송
       try {
-        const postRes = await fetch("http://localhost:8000/api/submit_transcript", {
+        const postRes = await fetch("https://ggeolmu-language.onrender.com/api/submit_transcript", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -71,5 +71,5 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 
   // 3. 앱 열기
-  chrome.tabs.create({ url: `http://localhost:8000/?videoId=${videoId}` });
+  chrome.tabs.create({ url: `https://ggeolmu-language.onrender.com/?videoId=${videoId}` });
 });
