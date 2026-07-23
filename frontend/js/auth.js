@@ -97,6 +97,27 @@ document.addEventListener('DOMContentLoaded', () => {
     modalError.textContent = '';
   }
 
+  const handleLoginEnter = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      loginSubmit.click();
+    }
+  };
+
+  document.getElementById('login-username').addEventListener('keypress', handleLoginEnter);
+  document.getElementById('login-password').addEventListener('keypress', handleLoginEnter);
+
+  const handleRegEnter = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      regSubmit.click();
+    }
+  };
+  
+  document.getElementById('reg-name').addEventListener('keypress', handleRegEnter);
+  document.getElementById('reg-username').addEventListener('keypress', handleRegEnter);
+  document.getElementById('reg-password').addEventListener('keypress', handleRegEnter);
+
   loginSubmit.addEventListener('click', async () => {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
@@ -112,7 +133,14 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password})
       });
-      const data = await res.json();
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        throw new Error("서버에서 올바르지 않은 응답이 반환되었습니다. (오류 메시지: Not Found가 반환되었을 수 있습니다.)");
+      }
+
       if(res.ok) {
         isAuthenticated = true;
         showSuccess(data.unique_code);
@@ -120,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalError.textContent = data.error || "로그인 실패";
       }
     } catch (e) {
-      modalError.textContent = "오류 발생: " + e;
+      modalError.textContent = "오류 발생: " + e.message;
     }
   });
 
@@ -140,7 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password, name})
       });
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        throw new Error("서버에서 올바르지 않은 응답이 반환되었습니다. (오류 메시지: Not Found가 반환되었을 수 있습니다.)");
+      }
+
       if(res.ok) {
         // 회원가입 성공
         showSuccess(data.unique_code);
@@ -148,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalError.textContent = data.error || "회원가입 실패";
       }
     } catch (e) {
-      modalError.textContent = "오류 발생: " + e;
+      modalError.textContent = "오류 발생: " + e.message;
     }
   });
 });
