@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ggeolmu language Pro</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container" style="display: none;" id="main-app-container">
+    <header class="glass-header">
+      <div class="header-left">
+        <h1>Ggeolmu language <span class="accent">Pro</span></h1>
+        <button id="open-youtube-btn" title="YouTube 열기">▶ YouTube 열기</button>
+      </div>
+      <div class="url-input-group">
+        <input type="text" id="video-url" placeholder="Paste YouTube URL here (e.g., https://youtu.be/...)" value="https://youtu.be/7NLzd2mjz-g?si=dH2-LVRnqRRq38Av">
+        <div class="lang-select-group">
+          <select id="script-lang" title="스크립트 언어 (자막)">
+            <option value="en" selected>🇺🇸 자막: 영어</option>
+            <option value="ko">🇰🇷 자막: 한국어</option>
+            <option value="ja">🇯🇵 자막: 일본어</option>
+            <option value="zh">🇨🇳 자막: 중국어</option>
+          </select>
+          <select id="dict-lang" title="단어 뜻 언어 (해석)">
+            <option value="ko" selected>🇰🇷 해석: 한국어</option>
+            <option value="en">🇺🇸 해석: 영어</option>
+            <option value="ja">🇯🇵 해석: 일본어</option>
+            <option value="zh">🇨🇳 해석: 중국어</option>
+          </select>
+        </div>
+        <button id="load-btn">Load Video</button>
+      </div>
+      <div class="header-right" style="display: flex; align-items: center; gap: 10px;">
+        <span id="user-info-display" style="display: none; font-weight: 500;"></span>
+        <button id="auth-btn" class="btn">로그인 / 가입</button>
+      </div>
+    </header>
+    
+    <main class="main-content">
+      <div id="welcome-message" class="empty-state-global">
+        <div class="empty-state-content">
+          <h2>Ready to learn?</h2>
+          <p>Paste a YouTube URL above and click "Load Video" to get started.</p>
+          <div class="bookmarklet-container" style="margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.2);">
+            <h3>💡 Pro Tip: 유튜브에서 바로 열기!</h3>
+            <p style="color: #aaa; font-size: 0.9em; margin-bottom: 1rem;">아래 버튼을 즐겨찾기 바에 드래그해서 올려두세요. 유튜브 영상을 보다가 클릭하면 이 화면으로 텔레포트 합니다!</p>
+            <a id="bookmarklet-btn" href="javascript:(function(){document.querySelectorAll('video').forEach(function(v){v.pause();});var mp=document.getElementById('movie_player');if(mp&&mp.pauseVideo)mp.pauseVideo();var m=window.location.href.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^&?\/ ]{11})/);var v=m?m[1]:null;if(v)window.open('http://ggeolmu-language.com/?videoId='+v,'_blank');else alert('YouTube 영상 페이지에서 클릭해주세요!');})();" class="btn" style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; cursor: move;">📖 Ggeolmu Pro 열기</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Left: Video Player -->
+      <section class="glass-card video-section" style="display: none;">
+        <div class="video-wrapper">
+          <div id="youtube-player"></div>
+        </div>
+      </section>
+
+      <!-- Right: Transcript Viewer -->
+      <section class="glass-card transcript-section" style="display: none;">
+        <div class="transcript-header">
+          <h2>Interactive Transcript</h2>
+          <p class="subtitle">Hover for meaning, click to replay.</p>
+          <div class="keyboard-shortcuts">
+            <span class="shortcut-item"><span class="key-badge">Space</span> 재생/정지</span>
+            <span class="shortcut-item"><span class="key-badge">v</span> 이전 문장</span>
+            <span class="shortcut-item"><span class="key-badge">b</span> 다시 듣기</span>
+            <span class="shortcut-item"><span class="key-badge">n</span> 다음 문장</span>
+            <span class="shortcut-item"><span class="key-badge">g</span> 앞 단어</span>
+            <span class="shortcut-item"><span class="key-badge">1</span>~<span class="key-badge">4</span> 0~75% 이동</span>
+          </div>
+        </div>
+        <div id="transcript-container" class="transcript-container">
+          <!-- Transcript items will be injected here via JS -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Tooltip Element -->
+    <div id="tooltip" class="tooltip hidden">
+      <div class="tooltip-pronunciation" id="tooltip-pron"></div>
+      <div class="tooltip-meaning" id="tooltip-mean"></div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content glass-card">
+      <span id="close-modal" class="close-btn" style="display: none;">&times;</span>
+      <h2 id="modal-title">로그인</h2>
+      <div id="modal-error" style="color: #ff6b6b; margin-bottom: 10px;"></div>
+      
+      <div id="auth-form-container">
+        <!-- 로그인 모드 -->
+        <div id="login-form">
+          <input type="text" id="login-username" placeholder="아이디">
+          <input type="password" id="login-password" placeholder="비밀번호">
+          <button id="login-submit" class="btn">로그인</button>
+          <p>계정이 없으신가요? <a href="#" id="toggle-to-register">회원가입</a></p>
+        </div>
+        
+        <!-- 회원가입 모드 -->
+        <div id="register-form" style="display:none;">
+          <input type="text" id="reg-name" placeholder="이름 (예: 홍길동)">
+          <input type="text" id="reg-username" placeholder="아이디">
+          <input type="password" id="reg-password" placeholder="비밀번호">
+          <button id="reg-submit" class="btn">회원가입</button>
+          <p>이미 계정이 있으신가요? <a href="#" id="toggle-to-login">로그인</a></p>
+        </div>
+      </div>
+      <div id="auth-success-container" style="display:none; text-align:center;">
+        <h3 style="color:#51cf66;">환영합니다!</h3>
+        <p id="auth-unique-code" style="font-family: monospace; background: rgba(255,255,255,0.1); padding:10px; border-radius:8px; margin: 10px 0;"></p>
+        <button id="auth-ok-btn" class="btn">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- Load JS -->
+  <script src="js/auth.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
