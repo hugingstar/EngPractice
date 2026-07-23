@@ -18,3 +18,5 @@ LanguageLearner/cookies.txt
 /cookies.txt
 /LanguageLearner/cookies.txt
 **/cookies.txt
+db.sqlite3
+.DS_Store
